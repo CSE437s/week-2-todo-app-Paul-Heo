@@ -1,5 +1,6 @@
 
 document.addEventListener("DOMContentLoaded", function() {
+    var api_key = "4498dc-6b6e57-7042c7-bea0c4-f5142f";
     var form = document.getElementById('new-todo-form');
     var input = document.getElementById('new-todo-text');
     var todoList = document.getElementById('todo-list');
@@ -13,11 +14,19 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 
     function addTodo(text) {
-        var newTodo = { id: Date.now(), text: text, completed: false };
-        todos.push(newTodo);
-        localStorage.setItem('todos', JSON.stringify(todos));
-        displayTodo(newTodo); 
-        input.value = '';
+        var data = { text: text };
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                var todo = JSON.parse(this.responseText);
+                displayTodo(todo);
+                input.value = ''; // Clear input field after adding
+            }
+        };
+        xhttp.open("POST", "https://cse204.work/todos", true);
+        xhttp.setRequestHeader("Content-type", "application/json");
+        xhttp.setRequestHeader("x-api-key", api_key);
+        xhttp.send(JSON.stringify(data));
     }
 
     function displayTodo(todo) {
@@ -49,14 +58,17 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 
     function toggleComplete(id, completed, todoElement) {
-        todos = todos.map(todo => {
-            if (todo.id === id) {
-                return { ...todo, completed: completed };
+        var data = { completed: completed };
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                updateTodoStyle(todoElement, completed);
             }
-            return todo;
-        });
-        localStorage.setItem('todos', JSON.stringify(todos)); 
-        updateTodoStyle(todoElement, completed);
+        };
+        xhttp.open("PUT", "https://cse204.work/todos/" + id, true);
+        xhttp.setRequestHeader("Content-type", "application/json");
+        xhttp.setRequestHeader("x-api-key", api_key);
+        xhttp.send(JSON.stringify(data));
     }
 
     function updateTodoStyle(todoElement, completed) {
@@ -68,18 +80,31 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 
     function deleteTodo(id, todoElement) {
-        todos = todos.filter(todo => todo.id !== id); 
-        localStorage.setItem('todos', JSON.stringify(todos)); 
-        todoList.removeChild(todoElement); 
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                todoList.removeChild(todoElement);
+            }
+        };
+        xhttp.open("DELETE", "https://cse204.work/todos/" + id, true);
+        xhttp.setRequestHeader("x-api-key", api_key);
+        xhttp.send();
     }
 
     // Load existing ToDos
     loadTodos();
     function loadTodos() {
-        var storedTodos = JSON.parse(localStorage.getItem('todos')) || [];
-        storedTodos.forEach(displayTodo);   
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                var todos = JSON.parse(this.responseText);
+                todos.forEach(displayTodo);
+            }
+        };
+        xhttp.open("GET", "https://cse204.work/todos", true);
+        xhttp.setRequestHeader("x-api-key", api_key);
+        xhttp.send();
     }
-
 
 });
 
